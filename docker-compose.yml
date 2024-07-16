@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  fastapi-gateway:
+    build:
+      context: ./APIs/API_Gateway
+      dockerfile: Dockerfile
+    image: crisbid/fastapi-gateway:latest
+    ports:
+      - "30001:8000"
+  
+  fastapi-auth:
+    build:
+      context: ./APIs/API_Authenticacao  # Diretório com Dockerfile do outro serviço
+      dockerfile: Dockerfile
+    image: crisbid/fastapi-auth:latest
+    ports:
+      - "30100:8000"
+
+  fastapi-transacao:
+    build:
+      context: ./APIs/API_Transacao  # Diretório com Dockerfile do outro serviço
+      dockerfile: Dockerfile
+    image: crisbid/fastapi-transacao:latest
+    ports:
+      - "30200:8000"

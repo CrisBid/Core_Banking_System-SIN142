@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fastapi-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fastapi-gateway
+  template:
+    metadata:
+      labels:
+        app: fastapi-gateway
+    spec:
+      containers:
+      - name: fastapi-gateway
+        image: crisbid/fastapi-gateway:latest
+        ports:
+        - containerPort: 8000
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fastapi-auth
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fastapi-auth
+  template:
+    metadata:
+      labels:
+        app: fastapi-auth
+    spec:
+      containers:
+      - name: fastapi-auth
+        image: crisbid/fastapi-auth:latest
+        ports:
+        - containerPort: 8000
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fastapi-transacao
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fastapi-transacao
+  template:
+    metadata:
+      labels:
+        app: fastapi-transacao
+    spec:
+      containers:
+      - name: fastapi-transacao
+        image: crisbid/fastapi-transacao:latest
+        ports:
+        - containerPort: 8000
+
+#---
+#
+#apiVersion: apps/v1
+#kind: Deployment
+#metadata:
+#  name: fastapi-bdupdate
+#spec:
+#  replicas: 2
+#  selector:
+#    matchLabels:
+#      app: fastapi-bdupdate
+#  template:
+#    metadata:
+#      labels:
+#        app: fastapi-bdupdate
+#    spec:
+#      containers:
+#      - name: fastapi-bdupdate
+#        image: crisbid/fastapi-bdupdate:latest
+#        ports:
+#        - containerPort: 8000
+
