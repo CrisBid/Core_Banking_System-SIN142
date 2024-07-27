@@ -1,2 +1,5 @@
 fastapi
 uvicorn
+cassandra-driver
+pika
+pydantic

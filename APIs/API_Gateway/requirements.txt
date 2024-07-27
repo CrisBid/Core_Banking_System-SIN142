@@ -1,2 +1,5 @@
 fastapi
 uvicorn
+pydantic
+pika
+requests

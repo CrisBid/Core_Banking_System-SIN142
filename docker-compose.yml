@@ -1,10 +1,28 @@
 version: '3.8'
 
 services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+
+  cassandra:
+    image: cassandra:latest
+    ports:
+      - "9042:9042"
+    environment:
+      - CASSANDRA_AUTHENTICATOR=PasswordAuthenticator
+      
   fastapi-gateway:
     build:
       context: ./APIs/API_Gateway
       dockerfile: Dockerfile
+    depends_on:
+      - rabbitmq
     image: crisbid/fastapi-gateway:latest
     ports:
       - "30001:8000"
@@ -13,6 +31,8 @@ services:
     build:
       context: ./APIs/API_Authenticacao  # Diretório com Dockerfile do outro serviço
       dockerfile: Dockerfile
+    depends_on:
+      - rabbitmq
     image: crisbid/fastapi-auth:latest
     ports:
       - "30100:8000"
@@ -21,6 +41,8 @@ services:
     build:
       context: ./APIs/API_Transacao  # Diretório com Dockerfile do outro serviço
       dockerfile: Dockerfile
+    depends_on:
+      - rabbitmq
     image: crisbid/fastapi-transacao:latest
     ports:
       - "30200:8000"

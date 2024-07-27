@@ -15,6 +15,17 @@ spec:
       containers:
       - name: fastapi-gateway
         image: crisbid/fastapi-gateway:latest
+        env:
+          - name: RABBITMQ_HOST
+            value: localhost
+          - name: RABBITMQ_PORT
+            value: "5672"
+          - name: RABBITMQ_USER
+            value: user
+          - name: RABBITMQ_PASSWORD
+            value: password
+          - name: SECRET_KEY
+            value: "secret"
         ports:
         - containerPort: 8000
 
@@ -34,11 +45,38 @@ spec:
       labels:
         app: fastapi-auth
     spec:
+      initContainers:
+        - name: wait-for-cassandra
+          image: busybox
+          command: ['sh', '-c', 'until nc -z cassandra 9042; do echo waiting for cassandra; sleep 5; done;']
       containers:
       - name: fastapi-auth
         image: crisbid/fastapi-auth:latest
+        env:
+          - name: RABBITMQ_HOST
+            value: rabbitmq
+          - name: RABBITMQ_PORT
+            value: "5672"
+          - name: RABBITMQ_USER
+            value: user
+          - name: RABBITMQ_PASSWORD
+            value: password
+          - name: SECRET_KEY
+            value: "secret"
+          - name: CASSANDRA_HOST
+            value: cassandra
+          - name: CASSANDRA_USER
+            value: admin
+          - name: CASSANDRA_PASSWORD
+            value: admin123
         ports:
         - containerPort: 8000
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
 
 ---
 
@@ -56,11 +94,38 @@ spec:
       labels:
         app: fastapi-transacao
     spec:
+      initContainers:
+        - name: wait-for-cassandra
+          image: busybox
+          command: ['sh', '-c', 'until nc -z cassandra 9042; do echo waiting for cassandra; sleep 5; done;']
       containers:
       - name: fastapi-transacao
         image: crisbid/fastapi-transacao:latest
+        env:
+          - name: RABBITMQ_HOST
+            value: rabbitmq
+          - name: RABBITMQ_PORT
+            value: "5672"
+          - name: RABBITMQ_USER
+            value: user
+          - name: RABBITMQ_PASSWORD
+            value: password
+          - name: SECRET_KEY
+            value: "secret"
+          - name: CASSANDRA_HOST
+            value: cassandra
+          - name: CASSANDRA_USER
+            value: admin
+          - name: CASSANDRA_PASSWORD
+            value: admin123
         ports:
         - containerPort: 8000
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
 
 #---
 #

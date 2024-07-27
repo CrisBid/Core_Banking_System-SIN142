@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cassandra
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cassandra
+  template:
+    metadata:
+      labels:
+        app: cassandra
+    spec:
+      containers:
+        - name: cassandra
+          image: cassandra:latest
+          ports:
+            - containerPort: 9042
+          env:
+            - name: CASSANDRA_AUTHENTICATOR
+              value: AllowAllAuthenticator
+            - name: CASSANDRA_AUTHORIZER
+              value: AllowAllAuthorizer
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - "cqlsh -u cassandra -p cassandra -e 'describe keyspaces;'"
+            initialDelaySeconds: 10
+            periodSeconds: 10

@@ -1,16 +1,8 @@
 from fastapi import FastAPI
-#from app.auth import jwt_handler
-#from app import models, database
+from app.routes import router
 
 app = FastAPI()
-
-#@app.on_event("startup")
-#async def startup():
-#    await database.connect()
-
-#@app.on_event("shutdown")
-#async def shutdown():
-#    await database.disconnect()
+app.include_router(router)
 
 @app.get("/")
 async def read_root():
