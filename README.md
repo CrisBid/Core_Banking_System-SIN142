@@ -4,6 +4,7 @@ Este repositório contém uma arquitetura de microsserviços implementados com F
 
 ## Estrutura do Projeto
 
+```
 fastapi-microservice/
 ├── app/
 │ ├── ... # Código do primeiro microsserviço
@@ -19,7 +20,7 @@ fastapi-microservice/
 ├── docker-compose.yml # Arquivo Docker Compose para construção e gerenciamento dos containers
 ├── requirements.txt # Dependências do Python
 └── README.md # Este arquivo
-
+```
 
 ## Pré-requisitos
 
@@ -39,61 +40,68 @@ Para construir as imagens Docker e enviá-las para o Docker Hub, execute o scrip
 ```bash
 ./deploy.sh   # Para Linux/Mac
 .\deploy.bat  # Para Windows
+```
 
 Rodar um Microserviço de Forma Individual
 Se você deseja rodar um microserviço de forma individual, use os seguintes comandos:
 
 Construir a imagem:
 
-bash
-Copiar código
+```bash
 docker build -t fastapi-gateway .
+```
 Constrói a imagem do microserviço fastapi-gateway a partir do Dockerfile na pasta atual.
 
 Fazer push da imagem:
 
-bash
-Copiar código
+```bash
 docker push fastapi-gateway
+```
+
 Envia a imagem fastapi-gateway para o Docker Hub.
 
 Executar o container:
 
-bash
-Copiar código
+```bash
 docker run -d --name fastapi-gateway -p 8000:8000 fastapi-gateway
+```
+
 Executa o container do microserviço fastapi-gateway em modo destacado e mapeia a porta 8000 do host para a porta 8000 do container.
 
 Implantar no Kubernetes
 Após o push das imagens, o script também aplicará as configurações do Kubernetes, criando os deployments e serviços necessários:
 
-bash
-Copiar código
+```bash
 kubectl apply -f deployment/deployment.yaml
 kubectl apply -f deployment/service.yaml
+```
+
 Verificar Status dos Serviços no Kubernetes
 Para monitorar os serviços em execução no Kubernetes, use os seguintes comandos:
 
 Verificar os pods:
 
-bash
-Copiar código
+```bash
 kubectl get pods
+```
+
 Lista todos os pods em execução no cluster Kubernetes.
 
 Verificar os serviços:
 
-bash
-Copiar código
+```bash
 kubectl get services
+```
+
 Lista todos os serviços configurados no cluster Kubernetes.
 
 Apagar Todos os Serviços Criados
 Se você precisar remover todos os serviços e pods criados, execute:
 
-bash
-Copiar código
+```bash
 kubectl delete all --all
+```
+
 Remove todos os recursos (pods, services, deployments, etc.) no namespace atual do Kubernetes.
 
 Acessando os Microsserviços
