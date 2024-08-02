@@ -3,10 +3,13 @@ kind: Service
 metadata:
   name: rabbitmq
 spec:
+  type: LoadBalancer
   ports:
-    - port: 5672
-      targetPort: 5672
-    - port: 15672
-      targetPort: 15672
+  - name: amqp
+    port: 5672
+    targetPort: 5672
+  - name: management
+    port: 15672
+    targetPort: 15672
   selector:
     app: rabbitmq

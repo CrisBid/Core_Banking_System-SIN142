@@ -17,7 +17,7 @@ spec:
         image: crisbid/fastapi-gateway:latest
         env:
           - name: RABBITMQ_HOST
-            value: localhost
+            value: rabbitmq
           - name: RABBITMQ_PORT
             value: "5672"
           - name: RABBITMQ_USER
@@ -127,25 +127,45 @@ spec:
           initialDelaySeconds: 10
           periodSeconds: 10
 
-#---
-#
-#apiVersion: apps/v1
-#kind: Deployment
-#metadata:
-#  name: fastapi-bdupdate
-#spec:
-#  replicas: 2
-#  selector:
-#    matchLabels:
-#      app: fastapi-bdupdate
-#  template:
-#    metadata:
-#      labels:
-#        app: fastapi-bdupdate
-#    spec:
-#      containers:
-#      - name: fastapi-bdupdate
-#        image: crisbid/fastapi-bdupdate:latest
-#        ports:
-#        - containerPort: 8000
+---
 
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fastapi-bdupdate
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fastapi-bdupdate
+  template:
+    metadata:
+      labels:
+        app: fastapi-bdupdate
+    spec:
+      initContainers:
+        - name: wait-for-cassandra
+          image: busybox
+          command: ['sh', '-c', 'until nc -z cassandra 9042; do echo waiting for cassandra; sleep 5; done;']
+      containers:
+      - name: fastapi-bdupdate
+        image: crisbid/fastapi-bdupdate:latest
+        env:
+          - name: RABBITMQ_HOST
+            value: rabbitmq
+          - name: RABBITMQ_PORT
+            value: "5672"
+          - name: RABBITMQ_USER
+            value: user
+          - name: RABBITMQ_PASSWORD
+            value: password
+          - name: SECRET_KEY
+            value: "secret"
+          - name: CASSANDRA_HOST
+            value: cassandra
+          - name: CASSANDRA_USER
+            value: admin
+          - name: CASSANDRA_PASSWORD
+            value: admin123
+        ports:
+        - containerPort: 8000

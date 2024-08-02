@@ -6,6 +6,7 @@ echo Fazendo push das imagens...
 docker push crisbid/fastapi-gateway:latest
 docker push crisbid/fastapi-auth:latest
 docker push crisbid/fastapi-transacao:latest
+docker push crisbid/fastapi-bdupdate:latest
 
 echo Aplicando os deployments e services no Kubernetes...
 kubectl apply -f deployment/cassandra-deployment.yaml
@@ -22,7 +23,6 @@ timeout /t 60
 
 echo Aplicando os deployments e services no Kubernetes...
 
-kubectl apply -f deployment/rabbitmq-management.yaml
 kubectl apply -f deployment/deployment.yaml
 kubectl apply -f deployment/service.yaml
 

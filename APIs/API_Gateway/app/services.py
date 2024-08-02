@@ -2,40 +2,85 @@ import requests
 import pika
 import os
 import json
+import uuid
+import time
 from fastapi import HTTPException
+import logging
 from app.models import TransacaoRequest, AuthRequest, AtualizaChavePix
 
-RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'localhost')
+# Configurações do RabbitMQ
+RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'rabbitmq')
+RABBITMQ_PORT = int(os.getenv('RABBITMQ_PORT', 5672))
 RABBITMQ_USER = os.getenv('RABBITMQ_USER', 'user')
 RABBITMQ_PASSWORD = os.getenv('RABBITMQ_PASSWORD', 'password')
-TRANSACOES_QUEUE = 'transacoes'
+TRANSACOES_QUEUE = 'transacoes_queue'
 AUTH_QUEUE = 'auth_queue'
+AUTH_RESPONSE_QUEUE = 'auth_response_queue'
 ATUALIZACAO_DB_QUEUE = 'atualizacao_db_queue'
 AUTH_API_URL = "http://auth-service/validate"
 
+logging.basicConfig(level=logging.INFO)
+
 def get_rabbitmq_connection():
-    credentials = pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASSWORD)
-    parameters = pika.ConnectionParameters(host=RABBITMQ_HOST, credentials=credentials)
-    connection = pika.BlockingConnection(parameters)
-    channel = connection.channel()
-    return connection, channel
+    try:
+        credentials = pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASSWORD)
+        parameters = pika.ConnectionParameters(host=RABBITMQ_HOST, port=RABBITMQ_PORT, credentials=credentials)
+        connection = pika.BlockingConnection(parameters)
+        channel = connection.channel()
+        logging.info(f"Conexão com RabbitMQ estabelecida com sucesso no host {RABBITMQ_HOST} e porta {RABBITMQ_PORT}.")
+        return connection, channel
+    except Exception as e:
+        logging.error(f"Erro ao conectar com RabbitMQ no host {RABBITMQ_HOST} e porta {RABBITMQ_PORT}: {e}")
+        raise e
+    
+# Inicializa a conexão ao iniciar a aplicação
+connection, channel = get_rabbitmq_connection()
+
+# Fechar a conexão ao encerrar a aplicação
+def close_rabbitmq_connection():
+    connection.close()
+    logging.info("Conexão com RabbitMQ fechada.")
+
+async def publish_to_queue(data, queue):
+    channel.queue_declare(queue=queue)
+    channel.basic_publish(exchange='', routing_key=queue, body=json.dumps(data.dict()))
+
+def consume_response_from_queue(corr_id):
+    connection, channel = get_rabbitmq_connection()
+    channel.queue_declare(queue=AUTH_RESPONSE_QUEUE)
+    method_frame, header_frame, body = channel.basic_get(AUTH_RESPONSE_QUEUE)
+    while not method_frame:
+        time.sleep(1)
+        method_frame, header_frame, body = channel.basic_get(AUTH_RESPONSE_QUEUE)
+    if header_frame.correlation_id == corr_id:
+        response = json.loads(body)
+        channel.basic_ack(method_frame.delivery_tag)
+        connection.close()
+        return response
+    else:
+        channel.basic_nack(method_frame.delivery_tag)
+    connection.close()
+
+async def validate_with_auth_service(auth_request: AuthRequest):
+    corr_id = str(uuid.uuid4())
+    request_data = {
+        "client_id": auth_request.client_id,
+        "client_secret": auth_request.client_secret,
+        "corr_id": corr_id
+    }
+    publish_to_queue(request_data, AUTH_QUEUE)
+    response = consume_response_from_queue(corr_id)
+    if "token" in response:
+        return {"status": "Autenticação bem-sucedida", "token": response["token"]}
+    else:
+        raise HTTPException(status_code=401, detail="Autenticação falhou")
+
+async def update_db_service(atualiza_chave_pix: AtualizaChavePix):
+    await publish_to_queue(atualiza_chave_pix, ATUALIZACAO_DB_QUEUE)
+    return {"status": "Atualização de chave solicitada"}
 
 async def authenticate_request(token: str):
     auth_response = requests.post(AUTH_API_URL, headers={"Authorization": token})
     if auth_response.status_code != 200:
         raise HTTPException(status_code=401, detail="Não autorizado")
-
-async def publish_to_queue(data, queue):
-    connection, channel = get_rabbitmq_connection()
-    channel.queue_declare(queue=queue)
-    channel.basic_publish(exchange='', routing_key=queue, body=json.dumps(data.dict()))
-    connection.close()
-
-async def validate_with_auth_service(auth_request: AuthRequest):
-    #await publish_to_queue(auth_request, AUTH_QUEUE)
-    return {"status": "Autenticação solicitada", "token" : "156155615156"}
-
-async def update_db_service(atualiza_chave_pix: AtualizaChavePix):
-    await publish_to_queue(atualiza_chave_pix, ATUALIZACAO_DB_QUEUE)
-    return {"status": "Atualização de chave solicitada"}
 
