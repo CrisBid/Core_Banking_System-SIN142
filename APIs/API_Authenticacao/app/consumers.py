@@ -22,12 +22,12 @@ def consume_auth_requests():
         except HTTPException as e:
             response_data = {"client_id": auth_request.client_id, "error": str(e.detail)}
 
-        response_properties = pika.BasicProperties(correlation_id=auth_request_data["corr_id"])
+        #response_properties = pika.BasicProperties(correlation_id=auth_request_data["corr_id"])
         ch.basic_publish(
             exchange='',
             routing_key=AUTH_RESPONSE_QUEUE,
             body=json.dumps(response_data),
-            properties=response_properties
+           # properties=response_properties
         )
 
     channel.queue_declare(queue=AUTH_QUEUE)

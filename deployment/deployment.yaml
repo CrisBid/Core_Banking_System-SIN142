@@ -26,6 +26,8 @@ spec:
             value: password
           - name: SECRET_KEY
             value: "secret"
+          - name: CASSANDRA_HOST
+            value: "179.189.94.124"
         ports:
         - containerPort: 8000
 
@@ -45,10 +47,6 @@ spec:
       labels:
         app: fastapi-auth
     spec:
-      initContainers:
-        - name: wait-for-cassandra
-          image: busybox
-          command: ['sh', '-c', 'until nc -z cassandra 9042; do echo waiting for cassandra; sleep 5; done;']
       containers:
       - name: fastapi-auth
         image: crisbid/fastapi-auth:latest
@@ -64,11 +62,11 @@ spec:
           - name: SECRET_KEY
             value: "secret"
           - name: CASSANDRA_HOST
-            value: cassandra
-          - name: CASSANDRA_USER
-            value: admin
-          - name: CASSANDRA_PASSWORD
-            value: admin123
+            value: "179.189.94.124"
+          #- name: CASSANDRA_USER
+          #  value: admin
+          #- name: CASSANDRA_PASSWORD
+          #  value: admin123
         ports:
         - containerPort: 8000
         readinessProbe:
@@ -94,10 +92,6 @@ spec:
       labels:
         app: fastapi-transacao
     spec:
-      initContainers:
-        - name: wait-for-cassandra
-          image: busybox
-          command: ['sh', '-c', 'until nc -z cassandra 9042; do echo waiting for cassandra; sleep 5; done;']
       containers:
       - name: fastapi-transacao
         image: crisbid/fastapi-transacao:latest
@@ -113,11 +107,11 @@ spec:
           - name: SECRET_KEY
             value: "secret"
           - name: CASSANDRA_HOST
-            value: cassandra
-          - name: CASSANDRA_USER
-            value: admin
-          - name: CASSANDRA_PASSWORD
-            value: admin123
+            value: "179.189.94.124"
+          #- name: CASSANDRA_USER
+          #  value: admin
+          #- name: CASSANDRA_PASSWORD
+          #  value: admin123
         ports:
         - containerPort: 8000
         readinessProbe:
@@ -143,10 +137,6 @@ spec:
       labels:
         app: fastapi-bdupdate
     spec:
-      initContainers:
-        - name: wait-for-cassandra
-          image: busybox
-          command: ['sh', '-c', 'until nc -z cassandra 9042; do echo waiting for cassandra; sleep 5; done;']
       containers:
       - name: fastapi-bdupdate
         image: crisbid/fastapi-bdupdate:latest
@@ -162,10 +152,10 @@ spec:
           - name: SECRET_KEY
             value: "secret"
           - name: CASSANDRA_HOST
-            value: cassandra
-          - name: CASSANDRA_USER
-            value: admin
-          - name: CASSANDRA_PASSWORD
-            value: admin123
+            value: "179.189.94.124"
+          #- name: CASSANDRA_USER
+          #  value: admin
+          #- name: CASSANDRA_PASSWORD
+          #  value: admin123
         ports:
         - containerPort: 8000

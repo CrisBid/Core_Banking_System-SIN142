@@ -27,6 +27,6 @@ spec:
               command:
                 - sh
                 - -c
-                - "cqlsh -u cassandra -p cassandra -e 'describe keyspaces;'"
+                - "cqlsh -u cassandra -p cassandra -e 'CREATE KEYSPACE IF NOT EXISTS core_bank_database WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : '1' };'"
             initialDelaySeconds: 10
             periodSeconds: 10

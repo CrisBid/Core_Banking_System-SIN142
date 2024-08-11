@@ -9,8 +9,11 @@ docker push crisbid/fastapi-transacao:latest
 docker push crisbid/fastapi-bdupdate:latest
 
 echo Aplicando os deployments e services no Kubernetes...
-kubectl apply -f deployment/cassandra-deployment.yaml
-kubectl apply -f deployment/cassandra-service.yaml
+
+REM kubectl apply -f deployment/cassandra-deployment.yaml
+REM kubectl apply -f deployment/cassandra-service.yaml
+
+docker run --name cassandra -d -p 9042:9042 cassandra:latest
 
 echo Aguardando Cassandra iniciar...
 timeout /t 90

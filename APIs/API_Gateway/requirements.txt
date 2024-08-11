@@ -3,3 +3,5 @@ uvicorn
 pydantic
 pika
 requests
+pyjwt
+cassandra-driver

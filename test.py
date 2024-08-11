@@ -1,42 +1,16 @@
-import pika
-import os
-import json
-import uuid
-import jwt
-import time
-import logging
-import asyncio
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 from datetime import datetime, timedelta
-from fastapi import HTTPException
-from app.models import AuthRequest
-from app.database import get_cassandra_session
+from jose import JWTError, jwt
+import pika
+import uuid
+import json
 
-RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'rabbitmq')
-RABBITMQ_PORT = int(os.getenv('RABBITMQ_PORT', 5672))
-RABBITMQ_USER = os.getenv('RABBITMQ_USER', 'user')
-RABBITMQ_PASSWORD = os.getenv('RABBITMQ_PASSWORD', 'password')
-
-AUTH_QUEUE = 'auth_queue'
-AUTH_RESPONSE_QUEUE = 'auth_response_queue'
+app = FastAPI()
 
 SECRET_KEY = "secretkey"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
-logging.basicConfig(level=logging.INFO)
-
-def get_rabbitmq_connection():
-    try:
-        credentials = pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASSWORD)
-        parameters = pika.ConnectionParameters(host=RABBITMQ_HOST, port=RABBITMQ_PORT, credentials=credentials)
-        connection = pika.BlockingConnection(parameters)
-        channel = connection.channel()
-        logging.info(f"Conexão com RabbitMQ estabelecida com sucesso no host {RABBITMQ_HOST} e porta {RABBITMQ_PORT}.")
-        return connection, channel
-    except Exception as e:
-        logging.error(f"Erro ao conectar com RabbitMQ no host {RABBITMQ_HOST} e porta {RABBITMQ_PORT}: {e}")
-        raise e
-    
 
 # Funções de autenticação
 def create_access_token(data: dict, expires_delta: timedelta = None):
@@ -49,11 +23,17 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-connection, channel = get_rabbitmq_connection()
-channel.queue_declare(queue=AUTH_QUEUE, durable=True)
-channel.queue_declare(queue=AUTH_RESPONSE_QUEUE, durable=True)
+# Configuração do RabbitMQ
+RABBITMQ_HOST = 'localhost'
+REQUEST_QUEUE = 'token_request_queue'
+RESPONSE_QUEUE = 'token_response_queue'
 
-def validate_auth_request(ch, method, properties, body):
+connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST))
+channel = connection.channel()
+channel.queue_declare(queue=REQUEST_QUEUE, durable=True)
+channel.queue_declare(queue=RESPONSE_QUEUE, durable=True)
+
+def on_request(ch, method, properties, body):
     request = json.loads(body)
     username = request.get("username")
     password = request.get("password")
@@ -85,4 +65,14 @@ def validate_auth_request(ch, method, properties, body):
     )
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
-channel.basic_consume(queue=AUTH_QUEUE, on_message_callback=validate_auth_request)
+channel.basic_consume(queue=REQUEST_QUEUE, on_message_callback=on_request)
+
+@app.on_event("startup")
+async def startup_event():
+    print("API de autenticação iniciada e ouvindo requisições no RabbitMQ")
+    channel.start_consuming()
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    channel.stop_consuming()
+    connection.close()
