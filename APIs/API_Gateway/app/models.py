@@ -5,8 +5,8 @@ class TransacaoRequest(BaseModel):
     valor: float
 
 class AuthRequest(BaseModel):
-    client_id: str
-    client_secret: str
+    instituicao_id: str
+    instituicao_secret: str
 
 class AtualizaChavePix(BaseModel):
     usuario_id: str

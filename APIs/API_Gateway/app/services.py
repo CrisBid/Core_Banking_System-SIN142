@@ -77,7 +77,7 @@ async def validate_with_auth_service(auth_request: AuthRequest):
     #else:
     #    raise HTTPException(status_code=401, detail="Autenticação falhou")
     try:
-        token_response = send_message_to_rabbitmq({"client_id": auth_request.client_id, "client_secret": auth_request.client_secret})
+        token_response = send_message_to_rabbitmq({"client_id": auth_request.instituicao_id, "client_secret": auth_request.instituicao_secret})
         token_data = json.loads(token_response)
         
         if "error" in token_data:
