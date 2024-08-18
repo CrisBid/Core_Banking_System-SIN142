@@ -7,9 +7,11 @@ import time
 import logging
 import asyncio
 import jwt
+from uuid import UUID
 from datetime import datetime, timedelta, timezone
 from app.models import AuthRequest
 from app.database import get_cassandra_session
+from cassandra.cluster import Session
 
 RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'rabbitmq')
 RABBITMQ_PORT = int(os.getenv('RABBITMQ_PORT', 5672))
@@ -55,39 +57,76 @@ channel.queue_declare(queue=AUTH_RESPONSE_QUEUE, durable=True)
 
 def validate_auth_request(ch, method, properties, body):
     request = json.loads(body)
-    client_id = request.get("client_id")
-    client_secret = request.get("client_secret")
+    institution_id = request.get("institution_id")
+    institution_secret = request.get("institution_secret")
     
-    # Simulação de validação de usuário
-    if client_id != "1" or client_secret != "12":
+    if not institution_id or not institution_secret:
         ch.basic_publish(
             exchange='',
             routing_key=properties.reply_to,
             properties=pika.BasicProperties(
                 correlation_id=properties.correlation_id
             ),
-            body=json.dumps({"error": "Invalid username or password"})
+            body=json.dumps({"error": "Missing institution_id or institution_secret"})
         )
         ch.basic_ack(delivery_tag=method.delivery_tag)
         return
-
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(data={"sub": client_id}, expires_delta=access_token_expires)
-    response = {
-        "access_token": access_token,
-        #"token_type": "bearer",
-        "validateTime": int(access_token_expires.total_seconds())  # Em segundos
-    }
     
-    ch.basic_publish(
-        exchange='',
-        routing_key=properties.reply_to,
-        properties=pika.BasicProperties(
-            correlation_id=properties.correlation_id
-        ),
-        body=json.dumps(response)
-    )
-    ch.basic_ack(delivery_tag=method.delivery_tag)
+    try:
+        # Convertendo institution_id para UUID
+        institution_id = UUID(institution_id)
+
+        # Obtém a sessão do Cassandra
+        session: Session = get_cassandra_session()
+        
+        # Consulta no banco de dados para validar o institution_id e institution_secret
+        query = "SELECT institution_id, institution_secret FROM institutions WHERE institution_id = %s"
+        row = session.execute(query, (institution_id,)).one()
+        
+        if row is None or row.institution_secret != institution_secret:
+            ch.basic_publish(
+                exchange='',
+                routing_key=properties.reply_to,
+                properties=pika.BasicProperties(
+                    correlation_id=properties.correlation_id
+                ),
+                body=json.dumps({"error": "Invalid institution_id or institution_secret"})
+            )
+            ch.basic_ack(delivery_tag=method.delivery_tag)
+            return
+        
+        # Se a validação for bem-sucedida, cria o token JWT
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(data={"sub": str(institution_id)}, expires_delta=access_token_expires)
+        
+        response = {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "validateTime": int(access_token_expires.total_seconds())
+        }
+        
+        ch.basic_publish(
+            exchange='',
+            routing_key=properties.reply_to,
+            properties=pika.BasicProperties(
+                correlation_id=properties.correlation_id
+            ),
+            body=json.dumps(response)
+        )
+        ch.basic_ack(delivery_tag=method.delivery_tag)
+    
+    except Exception as e:
+        logging.error(f"Erro ao validar a instituição no Cassandra: {e}")
+        ch.basic_publish(
+            exchange='',
+            routing_key=properties.reply_to,
+            properties=pika.BasicProperties(
+                correlation_id=properties.correlation_id
+            ),
+            body=json.dumps({"error": "Internal server error"})
+        )
+        ch.basic_ack(delivery_tag=method.delivery_tag)
+
 
 channel.basic_consume(queue=AUTH_QUEUE, on_message_callback=validate_auth_request)
 

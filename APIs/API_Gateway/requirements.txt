@@ -4,4 +4,5 @@ pydantic
 pika
 requests
 pyjwt
+python-jose
 cassandra-driver

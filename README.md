@@ -130,3 +130,9 @@ Se você deseja contribuir para este projeto, fique à vontade para abrir uma is
 
 Licença
 Este projeto é licenciado sob a MIT License.
+
+
+kubectl delete ingress example-ingress
+
+
+kubectl apply -f Nginx/nginx.yaml

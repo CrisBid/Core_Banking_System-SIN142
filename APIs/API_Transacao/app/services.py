@@ -13,15 +13,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'secret')
 RETRY_INTERVAL = 5  # Intervalo de retry em segundos
 RABBITMQ_QUEUE = 'transacoes'
 
-CASSANDRA_HOST = os.getenv('CASSANDRA_HOST', 'localhost')
-KEYSPACE = 'pix_system'
-
 logging.basicConfig(level=logging.INFO)
-
-class CassandraClient:
-    def __init__(self):
-        self.cluster = Cluster([CASSANDRA_HOST])
-        self.session = self.cluster.connect(KEYSPACE)
 
 async def get_rabbitmq_connection():
     while True:

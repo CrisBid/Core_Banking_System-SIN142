@@ -8,6 +8,12 @@ docker push crisbid/fastapi-auth:latest
 docker push crisbid/fastapi-transacao:latest
 docker push crisbid/fastapi-bdupdate:latest
 
+echo Criando o Secret para o certificado SSL...
+REM kubectl create secret tls cloudflare-cert --cert=Nginx/cloudflare.crt --key=Nginx/cloudflare.key
+
+echo Aplicando o Ingress com SSL...
+REM kubectl apply -f Nginx/nginx.yaml
+
 echo Aplicando os deployments e services no Kubernetes...
 
 REM kubectl apply -f deployment/cassandra-deployment.yaml
@@ -28,6 +34,8 @@ echo Aplicando os deployments e services no Kubernetes...
 
 kubectl apply -f deployment/deployment.yaml
 kubectl apply -f deployment/service.yaml
+
+cloudflared tunnel --url http://localhost:30000 run projetosd-tunnel
 
 echo Implantação concluída!
 pause

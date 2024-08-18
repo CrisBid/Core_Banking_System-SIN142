@@ -2,8 +2,8 @@ from pydantic import BaseModel
 from uuid import UUID
 
 class AuthRequest(BaseModel):
-    client_id: str
-    client_secret: str
+    institution_id: str
+    institution_secret: str
 
 class Instituicao(BaseModel):
     instituicao_id: UUID
@@ -19,3 +19,4 @@ class Usuario(BaseModel):
     email: str
     cpf: str
     telefone: str
+
