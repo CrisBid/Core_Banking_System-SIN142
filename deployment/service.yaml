@@ -49,11 +49,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: fastapi-bdupdate
+  name: fastapi-chavepix
 spec:
   type: NodePort
   selector:
-    app: fastapi-bdupdate
+    app: fastapi-chavepix
   ports:
     - protocol: TCP
       port: 80

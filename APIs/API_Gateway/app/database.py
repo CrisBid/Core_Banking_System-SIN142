@@ -42,7 +42,7 @@ def create_keyspace_and_table():
         );
     """)
 
-     # Criação da tabela usuarios
+     # Criação da tabela usuarios_pix
     session.execute("""
         CREATE TABLE IF NOT EXISTS usuarios_pix (
             id UUID PRIMARY KEY,
@@ -50,6 +50,21 @@ def create_keyspace_and_table():
             instituicao_id UUID,
             chave_pix TEXT,
             tipo_chave TEXT,
+            created_at TIMESTAMP
+        );
+    """)
+
+    # Criação da tabela usuarios_pix
+    session.execute("""
+        CREATE TABLE IF NOT EXISTS transfers (
+            id UUID PRIMARY KEY,
+            origem_usuario_id UUID,
+            origem_instituicao_id UUID,
+            destino_usuario_id UUID,
+            destino_instituicao_id UUID,
+            chave_pix TEXT,
+            tipo_chave TEXT,
+            valor FLOAT,
             created_at TIMESTAMP
         );
     """)

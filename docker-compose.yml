@@ -47,12 +47,12 @@ services:
     ports:
       - "30200:8000"
 
-  fastapi-bdupdate:
+  fastapi-chavepix:
     build:
-      context: ./APIs/API_UpdateBD  # Diretório com Dockerfile do outro serviço
+      context: ./APIs/API_ChavePix # Diretório com Dockerfile do outro serviço
       dockerfile: Dockerfile
     depends_on:
       - rabbitmq
-    image: crisbid/fastapi-bdupdate:latest
+    image: crisbid/fastapi-chavepix:latest
     ports:
       - "30300:8000"

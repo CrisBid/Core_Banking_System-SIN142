@@ -1,7 +1,17 @@
-from fastapi import APIRouter, Request, Depends
-from app.services import publish_to_queue, validate_with_auth_service, update_db_service
-from app.models import TransacaoRequest, AuthRequest, AtualizaChavePix
+from fastapi import APIRouter, Request, Depends, HTTPException
+#from app.services import update_db_service
+from app.services.auth import validate_with_auth_service
+from app.services.chavepix import (
+    criar_chave_pix_service,
+    apagar_chave_pix_service,
+    retornar_chave_pix_service,
+    listar_chaves_pix_service,
+    buscar_dados_por_chave_service
+)
+from app.models import TransacaoRequest, AuthRequest, ChavePixRequest
 from app.auth import verify_token  # Importe a função de verificação de token
+
+from uuid import UUID
 
 router = APIRouter()
 
@@ -16,8 +26,51 @@ async def criar_transacao(request: Request, transacao_request: TransacaoRequest,
     #await publish_to_queue(transacao_request, 'transacoes')
     return {"status": "Transação encaminhada"}
 
-@router.post("/atualiza_chave/")
-async def atualiza_chave(atualiza_chave_pix: AtualizaChavePix, institution_id: str = Depends(verify_token)):
+#@router.post("/chave_pix/")
+#async def atualiza_chave(atualiza_chave_pix: AtualizaChavePix, institution_id: str = Depends(verify_token)):
     # Validação do token já ocorreu, se chegou aqui, o token é válido
-    response = await update_db_service(atualiza_chave_pix)
-    return response
+    #response = await update_db_service(atualiza_chave_pix)
+    #return response
+
+
+@router.post("/chave_pix/")
+async def criar_chave_pix(chave_pix: ChavePixRequest, institution_id: str = Depends(verify_token)):
+    try:
+        resposta = criar_chave_pix_service(chave_pix)
+        return resposta
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao criar a chave PIX: {e}")
+
+@router.delete("/chave_pix/{chave_id}")
+async def apagar_chave_pix(chave_id: UUID, institution_id: str = Depends(verify_token)):
+    try:
+        resposta = apagar_chave_pix_service(chave_id)
+        return resposta
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao apagar a chave PIX: {e}")
+
+@router.get("/chave_pix/{chave_id}")
+async def retornar_chave_pix(chave_id: UUID, institution_id: str = Depends(verify_token)):
+    try:
+        resposta = retornar_chave_pix_service(chave_id)
+        return resposta
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao retornar a chave PIX: {e}")
+
+@router.get("/chave_pix/")
+async def listar_chaves_pix(usuario_id: UUID = None, instituicao_id: UUID = None, institution_id: str = Depends(verify_token)):
+    try:
+        resposta = listar_chaves_pix_service(usuario_id, instituicao_id)
+        return resposta
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao listar as chaves PIX: {e}")
+    
+@router.get("/chave_pix/find/")
+async def buscar_dados_por_chave(chave: str, institution_id: str = Depends(verify_token)):
+    try:
+        resposta = buscar_dados_por_chave_service(chave)
+        if not resposta:
+            raise HTTPException(status_code=404, detail="Chave PIX não encontrada")
+        return resposta
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao buscar dados pela chave PIX: {e}")

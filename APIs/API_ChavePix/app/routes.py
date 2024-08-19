@@ -1,9 +1,8 @@
 from fastapi import APIRouter, BackgroundTasks
-from app.services import process_transacao
+from app.consumer import start_consumer
 
 router = APIRouter()
 
 @router.on_event("startup")
 async def startup_event():
-    process_transacao()
-
+    start_consumer()

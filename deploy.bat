@@ -6,7 +6,7 @@ echo Fazendo push das imagens...
 docker push crisbid/fastapi-gateway:latest
 docker push crisbid/fastapi-auth:latest
 docker push crisbid/fastapi-transacao:latest
-docker push crisbid/fastapi-bdupdate:latest
+docker push crisbid/fastapi-chavepix:latest
 
 echo Criando o Secret para o certificado SSL...
 REM kubectl create secret tls cloudflare-cert --cert=Nginx/cloudflare.crt --key=Nginx/cloudflare.key

@@ -126,20 +126,20 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: fastapi-bdupdate
+  name: fastapi-chavepix
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: fastapi-bdupdate
+      app: fastapi-chavepix
   template:
     metadata:
       labels:
-        app: fastapi-bdupdate
+        app: fastapi-chavepix
     spec:
       containers:
-      - name: fastapi-bdupdate
-        image: crisbid/fastapi-bdupdate:latest
+      - name: fastapi-chavepix
+        image: crisbid/fastapi-chavepix:latest
         env:
           - name: RABBITMQ_HOST
             value: rabbitmq
