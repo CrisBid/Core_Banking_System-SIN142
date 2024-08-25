@@ -56,3 +56,13 @@ services:
     image: crisbid/fastapi-chavepix:latest
     ports:
       - "30300:8000"
+
+  fastapi-usuario:
+    build:
+      context: ./APIs/API_Usuario # Diretório com Dockerfile do outro serviço
+      dockerfile: Dockerfile
+    depends_on:
+      - rabbitmq
+    image: crisbid/fastapi-usuario:latest
+    ports:
+      - "30400:8000"

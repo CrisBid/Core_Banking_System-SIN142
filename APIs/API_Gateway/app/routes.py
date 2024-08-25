@@ -8,7 +8,14 @@ from app.services.chavepix import (
     listar_chaves_pix_service,
     buscar_dados_por_chave_service
 )
-from app.models import TransacaoRequest, AuthRequest, ChavePixRequest
+from app.services.usuario import (
+    criar_usuario_service,
+    apagar_usuario_service,
+    retornar_usuario_service,
+    listar_usuarios_service,
+    buscar_usuario_por_cpf_service
+)
+from app.models import TransacaoRequest, AuthRequest, ChavePixRequest, Usuario, UsuarioCreate
 from app.auth import verify_token  # Importe a função de verificação de token
 
 from uuid import UUID
@@ -74,3 +81,46 @@ async def buscar_dados_por_chave(chave: str, institution_id: str = Depends(verif
         return resposta
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao buscar dados pela chave PIX: {e}")
+
+@router.post("/usuario/")
+async def criar_usuario(usuario: UsuarioCreate, institution_id: str = Depends(verify_token)):
+    try:  
+        resposta = criar_usuario_service(usuario)
+        return resposta
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao criar o usuário: {e}")
+
+@router.delete("/usuario/{usuario_id}")
+async def apagar_usuario(usuario_id: UUID, institution_id: str = Depends(verify_token)):
+    try:
+        resposta = apagar_usuario_service(usuario_id)
+        return resposta
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao apagar o usuário: {e}")
+
+@router.get("/usuario/{usuario_id}")
+async def retornar_usuario(usuario_id: UUID, institution_id: str = Depends(verify_token)):
+    try:
+        resposta = retornar_usuario_service(usuario_id)
+        return resposta
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao retornar o usuário: {e}")
+
+@router.get("/usuario/")
+async def listar_usuarios(instituicao_id: UUID = None, institution_id: str = Depends(verify_token)):
+    try:
+        resposta = listar_usuarios_service(instituicao_id)
+        return resposta
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao listar os usuários: {e}")
+    
+@router.get("/usuario/find/")
+async def buscar_usuario_por_cpf(cpf: str, institution_id: str = Depends(verify_token)):
+    try:
+        resposta = buscar_usuario_por_cpf_service(cpf)
+        if not resposta:
+            raise HTTPException(status_code=404, detail="Usuário não encontrado")
+        return resposta
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao buscar o usuário pelo CPF: {e}")

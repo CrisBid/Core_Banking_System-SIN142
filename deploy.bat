@@ -7,6 +7,7 @@ docker push crisbid/fastapi-gateway:latest
 docker push crisbid/fastapi-auth:latest
 docker push crisbid/fastapi-transacao:latest
 docker push crisbid/fastapi-chavepix:latest
+docker push crisbid/fastapi-usuario:latest
 
 echo Criando o Secret para o certificado SSL...
 REM kubectl create secret tls cloudflare-cert --cert=Nginx/cloudflare.crt --key=Nginx/cloudflare.key
@@ -22,7 +23,7 @@ REM kubectl apply -f deployment/cassandra-service.yaml
 docker run --name cassandra -d -p 9042:9042 cassandra:latest
 
 echo Aguardando Cassandra iniciar...
-timeout /t 90
+REM timeout /t 90
 
 kubectl apply -f deployment/rabbitmq-deployment.yaml
 kubectl apply -f deployment/rabbitmq-service.yaml
