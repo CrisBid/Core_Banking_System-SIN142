@@ -4,3 +4,4 @@ cassandra-driver
 pydantic
 pyjwt
 pika
+bcrypt

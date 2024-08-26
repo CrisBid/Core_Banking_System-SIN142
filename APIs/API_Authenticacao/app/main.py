@@ -1,17 +1,18 @@
 from fastapi import FastAPI, HTTPException
-import pika
-import os
-import json
-import uuid
-import time
+from datetime import datetime, timedelta, timezone
+from cassandra.cluster import Session
+from app.database import get_cassandra_session
+from app.models import AuthRequest
+from uuid import UUID
 import logging
 import asyncio
+import bcrypt
+import uuid
+import time
+import json
+import pika
 import jwt
-from uuid import UUID
-from datetime import datetime, timedelta, timezone
-from app.models import AuthRequest
-from app.database import get_cassandra_session
-from cassandra.cluster import Session
+import os
 
 RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'rabbitmq')
 RABBITMQ_PORT = int(os.getenv('RABBITMQ_PORT', 5672))
@@ -83,7 +84,7 @@ def validate_auth_request(ch, method, properties, body):
         query = "SELECT institution_id, institution_secret FROM institutions WHERE institution_id = %s"
         row = session.execute(query, (institution_id,)).one()
         
-        if row is None or row.institution_secret != institution_secret:
+        if row is None or not bcrypt.checkpw(institution_secret.encode('utf-8'), row.institution_secret.encode('utf-8')):
             ch.basic_publish(
                 exchange='',
                 routing_key=properties.reply_to,
