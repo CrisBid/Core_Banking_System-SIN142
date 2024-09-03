@@ -24,7 +24,7 @@ def get_rabbitmq_connection():
 
 def get_rabbitmq_external_connection():
     try:
-        credentials = pika.PlainCredentials('9d67c2ce-c0e4-4656-bbb8-dd8ff5cc94fd', 'Vini@Calvo2024')
+        credentials = pika.PlainCredentials('guest', 'guest')
         parameters = pika.ConnectionParameters(host='179.189.94.124', port=9080, credentials=credentials)
         connection = pika.BlockingConnection(parameters)
         channel = connection.channel()
