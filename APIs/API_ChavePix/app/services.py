@@ -42,35 +42,38 @@ def retornar_chave_pix_service(chave_id: UUID) -> ChavePix:
         return None
 
     return ChavePix(
-        id=row.id,
+        id=str(row.id),
         chave=row.chave,
         tipo_chave=row.tipo_chave,
         usuario_id=row.usuario_id,
         instituicao_id=row.instituicao_id,
-        created_at=row.created_at
+        created_at=row.created_at.isoformat() if row.created_at else None
     )
 
-def listar_chaves_pix_service(usuario_id: UUID = None, instituicao_id: UUID = None) -> list:
+def listar_chaves_pix_service(usuario_id: str = None, instituicao_id: str = None) -> list:
     session: Session = get_cassandra_session()
 
     if usuario_id:
-        query = "SELECT id, chave_pix, tipo_chave, usuario_id, instituicao_id, created_at FROM usuarios_pix WHERE usuario_id = %s"
-        rows = session.execute(query, (usuario_id,))
+        usuario_uuid = UUID(usuario_id)
+        query = "SELECT id, chave_pix, tipo_chave, usuario_id, instituicao_id, created_at FROM usuarios_pix WHERE usuario_id = %s ALLOW FILTERING"
+        rows = session.execute(query, (usuario_uuid,))
     elif instituicao_id:
-        query = "SELECT id, chave_pix, tipo_chave, usuario_id, instituicao_id, created_at FROM usuarios_pix WHERE instituicao_id = %s"
-        rows = session.execute(query, (instituicao_id,))
+        instituicao_uuid = UUID(instituicao_id)
+        query = "SELECT id, chave_pix, tipo_chave, usuario_id, instituicao_id, created_at FROM usuarios_pix WHERE instituicao_id = %s ALLOW FILTERING"
+        rows = session.execute(query, (instituicao_uuid,))
     else:
-        return []
+        query = "SELECT id, chave_pix, tipo_chave, usuario_id, instituicao_id, created_at FROM usuarios_pix"
+        rows = session.execute(query)
 
     chaves = []
     for row in rows:
         chaves.append(ChavePix(
-            id=row.id,
+            id=str(row.id),  # Convertendo UUID para string
             chave_pix=row.chave_pix,
             tipo_chave=row.tipo_chave,
-            usuario_id=row.usuario_id,
-            instituicao_id=row.instituicao_id,
-            created_at=row.created_at
+            usuario_id=str(row.usuario_id),  # Convertendo UUID para string
+            instituicao_id=str(row.instituicao_id),  # Convertendo UUID para string
+            created_at=str(row.created_at.isoformat() if row.created_at else None ) # Convertendo datetime para string no formato ISO
         ))
 
     return chaves

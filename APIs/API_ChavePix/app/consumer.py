@@ -24,8 +24,17 @@ def process_chave_pix(ch, method, properties, body):
         if action == "create":
             chave_pix_data = message.get("data")
             chave_pix = ChavePixRequest(**chave_pix_data)
-            criar_chave_pix_service(chave_pix)
-            resposta = {"status": "Chave PIX criada com sucesso"}
+            resposta_request = criar_chave_pix_service(chave_pix)
+
+             # Converte o objeto usuario_criado para dicionário
+            pix_dict = resposta_request.dict()
+            
+            # Converte o campo usuario_id para string
+            pix_dict['id'] = str(pix_dict['id'])
+            pix_dict['usuario_id'] = str(pix_dict['usuario_id'])
+            pix_dict['instituicao_id'] = str(pix_dict['instituicao_id'])
+
+            resposta = {"status": "Chave PIX criada com sucesso", "data":pix_dict}
 
         elif action == "delete":
             chave_id = UUID(message.get("chave_id"))
@@ -42,6 +51,10 @@ def process_chave_pix(ch, method, properties, body):
             instituicao_id = message.get("instituicao_id")
             chaves_pix = listar_chaves_pix_service(usuario_id, instituicao_id)
             resposta = [chave.dict() for chave in chaves_pix]
+            for chave in resposta:
+                chave['id'] = str(chave['id'])
+                chave['usuario_id'] = str(chave['usuario_id'])
+                chave['instituicao_id'] = str(chave['instituicao_id'])
 
         elif action == "find_by_key":
             chave = message.get("chave")

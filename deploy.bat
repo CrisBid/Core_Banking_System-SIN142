@@ -25,6 +25,8 @@ docker run --name cassandra -d -p 9042:9042 cassandra:latest
 echo Aguardando Cassandra iniciar...
 REM timeout /t 90
 
+docker run -d --name rabbitmq -p 9081:15672 -p 9080:5672 rabbitmq:management
+
 kubectl apply -f deployment/rabbitmq-deployment.yaml
 kubectl apply -f deployment/rabbitmq-service.yaml
 

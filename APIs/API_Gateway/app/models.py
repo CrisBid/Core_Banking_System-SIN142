@@ -1,6 +1,8 @@
 from pydantic import BaseModel
 
 class TransacaoRequest(BaseModel):
+    usuario_id: str
+    instituicao_id: str
     chave_pix: str
     valor: float
 

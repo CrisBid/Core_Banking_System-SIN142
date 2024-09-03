@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Request, Depends, HTTPException
 #from app.services import update_db_service
 from app.services.auth import validate_with_auth_service
+from app.services.transacao import criar_transacao_service
 from app.services.chavepix import (
     criar_chave_pix_service,
     apagar_chave_pix_service,
@@ -28,10 +29,12 @@ async def autenticar(auth_request: AuthRequest):
     return response
 
 @router.post("/transacao/")
-async def criar_transacao(request: Request, transacao_request: TransacaoRequest, institution_id: str = Depends(verify_token)):
-    # Validação do token já ocorreu, se chegou aqui, o token é válido
-    #await publish_to_queue(transacao_request, 'transacoes')
-    return {"status": "Transação encaminhada"}
+async def criar_transacao(request: TransacaoRequest, institution_id: str = Depends(verify_token)):
+    try:
+        resposta = criar_transacao_service(request)
+        return resposta
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao efetuar transacao: {e}")
 
 #@router.post("/chave_pix/")
 #async def atualiza_chave(atualiza_chave_pix: AtualizaChavePix, institution_id: str = Depends(verify_token)):
@@ -56,6 +59,7 @@ async def apagar_chave_pix(chave_id: UUID, institution_id: str = Depends(verify_
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao apagar a chave PIX: {e}")
 
+"""
 @router.get("/chave_pix/{chave_id}")
 async def retornar_chave_pix(chave_id: UUID, institution_id: str = Depends(verify_token)):
     try:
@@ -63,15 +67,16 @@ async def retornar_chave_pix(chave_id: UUID, institution_id: str = Depends(verif
         return resposta
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao retornar a chave PIX: {e}")
-
+"""
 @router.get("/chave_pix/")
-async def listar_chaves_pix(usuario_id: UUID = None, instituicao_id: UUID = None, institution_id: str = Depends(verify_token)):
+async def listar_chaves_pix( institution_id: str = Depends(verify_token)):
     try:
-        resposta = listar_chaves_pix_service(usuario_id, instituicao_id)
+        resposta = listar_chaves_pix_service()
         return resposta
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao listar as chaves PIX: {e}")
-    
+
+        
 @router.get("/chave_pix/find/")
 async def buscar_dados_por_chave(chave: str, institution_id: str = Depends(verify_token)):
     try:
@@ -99,6 +104,7 @@ async def apagar_usuario(usuario_id: UUID, institution_id: str = Depends(verify_
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao apagar o usuário: {e}")
 
+"""
 @router.get("/usuario/{usuario_id}")
 async def retornar_usuario(usuario_id: UUID, institution_id: str = Depends(verify_token)):
     try:
@@ -106,15 +112,15 @@ async def retornar_usuario(usuario_id: UUID, institution_id: str = Depends(verif
         return resposta
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao retornar o usuário: {e}")
-
+"""
 @router.get("/usuario/")
-async def listar_usuarios(instituicao_id: UUID = None, institution_id: str = Depends(verify_token)):
+async def listar_usuarios( institution_id: str = Depends(verify_token)):
     try:
-        resposta = listar_usuarios_service(instituicao_id)
+        resposta = listar_usuarios_service()
         return resposta
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao listar os usuários: {e}")
-    
+        
 @router.get("/usuario/find/")
 async def buscar_usuario_por_cpf(cpf: str, institution_id: str = Depends(verify_token)):
     try:
