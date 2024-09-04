@@ -21,6 +21,28 @@ channel.queue_declare(queue=TRANSACTION_QUEUE, durable=True)
 channel.queue_declare(queue=TRANSACTION_RESPONSE_QUEUE, durable=True)
 logger.info("Conexão com RabbitMQ estabelecida e filas declaradas.")
 
+def send_response_to_queue(correlation_id, success, message):
+    """
+    Função para enviar a resposta para a fila transaction_response_queue.
+    """
+    response = {
+        "sucesso": success,
+        "mensagem": message
+    }
+
+    logger.info(f"Enviando resposta para a fila {TRANSACTION_RESPONSE_QUEUE}: {response}")
+    
+    # Publica a resposta na fila de respostas
+    channel.basic_publish(
+        exchange='',
+        routing_key=TRANSACTION_RESPONSE_QUEUE,
+        body=json.dumps(response),
+        properties=pika.BasicProperties(
+            correlation_id=correlation_id,  # Usa o correlation_id da transação original
+            delivery_mode=2,  # Mensagem persistente
+        )
+    )
+
 def process_transacao(ch, method, properties, body):
     logger.info(f"Recebida nova transação: {body}")
     session: Session = get_cassandra_session()
@@ -72,6 +94,7 @@ def process_transacao(ch, method, properties, body):
         else:
             logger.info("Processando transação externa...")
             try:
+                """
                 external_connection, external_channel = get_rabbitmq_external_connection()
 
                 logger.info(f"Declarando fila transacao_{instituicao_origem}_queue no RabbitMQ externo...")
@@ -126,73 +149,84 @@ def process_transacao(ch, method, properties, body):
 
                 if response.get("sucesso"):
                     logger.info(f"Transação externa processada com sucesso pelo banco de origem {instituicao_origem}")
-                    
-                    logger.info(f"Enviando transação para o banco de destino {instituicao_destino}...")
-                    external_channel.basic_publish(
-                        exchange='',
-                        routing_key=f"transacao_{instituicao_destino}_queue",
-                        body=json.dumps({
-                            "action": "transfer_inbound",
-                            "usuario_origem": str(usuario_origem),
-                            "usuario_destino": str(usuario_destino),
-                            "instituicao_origem": str(instituicao_origem),
-                            "instituicao_destino": str(instituicao_destino),
-                            "chave_pix": chave_pix,
-                            "tipo_chave": tipo_chave,
-                            "valor": valor
-                        }),
-                        properties=pika.BasicProperties(
-                            reply_to=f"transacao_{instituicao_destino}_response_queue",
-                            correlation_id=properties.correlation_id,
-                            delivery_mode=2,
-                        )
-                    )
 
-                    logger.info("Aguardando resposta do banco de destino...")
-                    response_destino = None
-                    timeout = 30
-                    start_time = time.time()
+                """
 
-                    def on_response_destino(ch, method, properties, body):
-                        nonlocal response_destino
-                        if properties.correlation_id == properties.correlation_id:
-                            response_destino = json.loads(body)
-                            ch.basic_ack(delivery_tag=method.delivery_tag)
-                            logger.info(f"Resposta do banco de destino recebida: {response_destino}")
+                external_connection, external_channel = get_rabbitmq_external_connection()
 
-                    external_channel.basic_consume(
-                        queue=f"transacao_{instituicao_destino}_response_queue",
-                        on_message_callback=on_response_destino,
-                        auto_ack=False
-                    )
-
-                    while response_destino is None and (time.time() - start_time) < timeout:
-                        external_connection.process_data_events(time_limit=1)
-
-                    if response_destino is None:
-                        logger.error(f"Timeout ao aguardar a resposta do banco de destino {instituicao_destino}")
-                        ch.basic_ack(delivery_tag=method.delivery_tag)
-                        return
-
-                    if response_destino.get("sucesso"):
-                        logger.info(f"Transação externa processada com sucesso pelo banco de destino {instituicao_destino}")
-                        ch.basic_ack(delivery_tag=method.delivery_tag)
-                    else:
-                        logger.error(f"Falha ao processar transação externa pelo banco de destino {instituicao_destino}")
-                        ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+                logger.info(f"Declarando fila transacao_{instituicao_destino}_queue no RabbitMQ externo...")
+                external_channel.queue_declare(queue=f"transacao_{instituicao_destino}_queue", durable=True)
                 
+                logger.info(f"Enviando transação para o banco de destino {instituicao_destino}...")
+                external_channel.basic_publish(
+                    exchange='',
+                    routing_key=f"transacao_{instituicao_destino}_queue",
+                    body=json.dumps({
+                        "action": "transfer_inbound",
+                        "usuario_origem": str(usuario_origem),
+                        "usuario_destino": str(usuario_destino),
+                        "instituicao_origem": str(instituicao_origem),
+                        "instituicao_destino": str(instituicao_destino),
+                        "chave_pix": chave_pix,
+                        "tipo_chave": tipo_chave,
+                        "valor": valor
+                    }),
+                    properties=pika.BasicProperties(
+                        reply_to=f"transacao_{instituicao_destino}_response_queue",
+                        correlation_id=properties.correlation_id,
+                        delivery_mode=2,
+                    )
+                )
+
+                logger.info("Aguardando resposta do banco de destino...")
+                response_destino = None
+                timeout = 30
+                start_time = time.time()
+
+                def on_response_destino(ch, method, properties, body):
+                    nonlocal response_destino
+                    if properties.correlation_id == properties.correlation_id:
+                        response_destino = json.loads(body)
+                        ch.basic_ack(delivery_tag=method.delivery_tag)
+                        logger.info(f"Resposta do banco de destino recebida: {response_destino}")
+
+                external_channel.basic_consume(
+                    queue=f"transacao_{instituicao_destino}_response_queue",
+                    on_message_callback=on_response_destino,
+                    auto_ack=False
+                )
+
+                while response_destino is None and (time.time() - start_time) < timeout:
+                    external_connection.process_data_events(time_limit=1)
+
+                if response_destino is None:
+                    logger.error(f"Timeout ao aguardar a resposta do banco de destino {instituicao_destino}")
+                    ch.basic_ack(delivery_tag=method.delivery_tag)
+                    return
+
+                if response_destino.get("sucesso"):
+                    logger.info(f"Transação externa processada com sucesso pelo banco de destino {instituicao_destino}")
+                    send_response_to_queue(properties.correlation_id, True, "Transação externa processada com sucesso pelo banco de destino")
+                    ch.basic_ack(delivery_tag=method.delivery_tag)
                 else:
-                    logger.error(f"Falha ao processar transação externa pelo banco de origem {instituicao_origem}")
+                    logger.error(f"Falha ao processar transação externa pelo banco de destino {instituicao_destino}")
+                    send_response_to_queue(properties.correlation_id, False, "Falha ao processar transação externa pelo banco de destino")
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+                
+                #else:
+                #    logger.error(f"Falha ao processar transação externa pelo banco de origem {instituicao_origem}")
+                #    ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
 
                 external_connection.close()
 
             except Exception as e:
                 logger.error(f"Erro ao processar transação externa: {e}")
+                send_response_to_queue(properties.correlation_id, False, f"Erro ao processar transação externa: {e}")
                 ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
 
     except Exception as e:
         logger.error(f"Erro ao processar transação: {e}")
+        send_response_to_queue(properties.correlation_id, False, f"Erro ao processar transação: {e}")
         ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
 
 channel.basic_consume(queue=TRANSACTION_QUEUE, on_message_callback=process_transacao)
