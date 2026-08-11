@@ -49,7 +49,7 @@ flowchart LR
         GW --- DB
     end
 
-    TX <-->|fila dinâmica<br/>transacao_{instituicao}_queue| EXT[(RabbitMQ<br/>externo/interbancário)]
+    TX <-->|"fila dinâmica: transacao_INSTITUICAO_queue"| EXT[(RabbitMQ<br/>externo/interbancário)]
     EXT -.-> BankA["Banco Privado A<br/>(fora deste repo)"]
     EXT -.-> BankB["Banco Privado B<br/>(fora deste repo)"]
 ```
